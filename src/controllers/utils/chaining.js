@@ -1,8 +1,7 @@
 const { v4: uuidv4 } = require('uuid');
 const ChainReq = require('../../schemas/ChainRequest');
 const Account = require('../../schemas/Account');
-const Match = require('../../schemas/Match');
-const LinxExtent = require('../../schemas/LinxExtent');
+const Connection = require('../../schemas/Connection');
 const ChainIndex = require('../../schemas/ChainIndex');
 const ChainRequest = require('../../schemas/ChainRequest');
 
@@ -46,19 +45,6 @@ module.exports = {
             return insertResult;
         } catch (error) {
             console.log('result ERROR of insertion on ChainRequests: ', error)
-        }
-    },
-    retrieveChainLinxExtents : async (userid , linxid) => {
-        try {
-            let extents = [];
-            if(linxid !== null){
-                extents = await LinxExtent.find({mylinxuserID : linxid , chainadminID : userid})
-            }else{
-                extents = await LinxExtent.find({chainadminID : userid})
-            }
-            return extents;
-        } catch (error) {
-            console.log('ERROR RECUPERANDO EXTENTS : ', error)
         }
     },
     joinChains: async (userid, linxid, chainid) => {
@@ -117,7 +103,7 @@ module.exports = {
             let roomkey = '';            
 
             // COMPROBAMOS SI ERAN MATCHES
-            let match = await Match.findOne({
+            let match = await Connection.findOne({
                 $or: [
                     { $and: [{ userid_a: userid }, { userid_b: linxid }] },
                     { $and: [{ userid_a: linxid }, { userid_b: userid }] }
@@ -125,7 +111,7 @@ module.exports = {
             })
 
             if(match){
-                roomkey = match.roomkey;
+                roomkey = Connection.roomkey;
             }else{
                 roomkey = uuidv4();
             }
@@ -155,7 +141,7 @@ module.exports = {
 
             // SI FUERAN MATCHES BORRAMOS EL MATCH 
             if(match){
-                let removeMatch = await Match.deleteOne({
+                let removeMatch = await Connection.deleteOne({
                     $or: [
                         { $and: [{ userid_a: userid }, { userid_b: linxid }] },
                         { $and: [{ userid_a: linxid }, { userid_b: userid }] }
@@ -314,13 +300,13 @@ module.exports = {
 
             // 3º ELIMINAMOS LOS LINXEXTENTS QUE EL EXLINX HUBIESE AÑADIDO A LA CADENA
             let extentsIds = new Set();
-            let extents =  await LinxExtent.find({chainID : chainid , mylinxuserID : exLINX_ID, chainadminID : CHAIN_ADMIN_ID});
+            //let extents =  await LinxExtent.find({chainID : chainid , mylinxuserID : exLINX_ID, chainadminID : CHAIN_ADMIN_ID});
             
             extents.forEach(ext => {
                 extentsIds.add(ext.userid)
             })
 
-            let deleteExtents = await LinxExtent.deleteMany({chainID : chainid , mylinxuserID : exLINX_ID}).session(session);
+            //let deleteExtents = await LinxExtent.deleteMany({chainID : chainid , mylinxuserID : exLINX_ID}).session(session);
 
             console.log('DELETE EXTENTS : ', deleteExtents)
 

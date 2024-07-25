@@ -2,7 +2,7 @@
 const { v4: uuidv4 } = require('uuid');
 let match = require('./utils/matching');
 const matching = require('./utils/matching');
-const Match = require('../schemas/Match');
+const Connection = require('../schemas/Connection');
 const Account = require('../schemas/Account');
 const Article = require('../schemas/Article');
 const ChainReq = require('../schemas/ChainRequest');
@@ -118,7 +118,7 @@ module.exports = {
 
             const userid = req.params.userid;
 
-            let _matches = await Match.find({
+            let _matches = await Connection.find({
                 $or: [
                     { userid_a: userid },
                     { userid_b: userid }
@@ -167,7 +167,7 @@ module.exports = {
             const userid = req.params.userid;
             const matchuserid = req.params.matchuserid;
 
-            let deleteMatch = await Match.deleteOne({$or: 
+            let deleteMatch = await Connection.deleteOne({$or: 
                 [
                     {$and : [{userid_a : userid , userid_b : matchuserid}]},
                     {$and : [{userid_a : matchuserid , userid_b : userid}]}

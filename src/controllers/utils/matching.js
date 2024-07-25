@@ -1,6 +1,6 @@
 const Account = require('../../schemas/Account');
-const HalfMatch = require('../../schemas/HalfMatch');
-const Match = require('../../schemas/Match');
+const HalfConnection = require('../../schemas/HalfConnection');
+const Connection = require('../../schemas/Connection');
 const usersFilterRepo = require('./usersFilterRepository');
 
 const getMatchingLocation = async (user, searchgroup) => {
@@ -247,7 +247,7 @@ const getCompatibilityPercentage = async (user, searchgroup) => {
 }
 const retrieveHalfMatches = async (user) => {
     try {
-        let _halfMatches = await HalfMatch.find({ matchingUserid: user.userid });
+        let _halfMatches = await HalfConnection.find({ matchingUserid: user.userid });
         return _halfMatches;
     } catch (error) {
         console.log('error retrieving HalfMatches...', error)
@@ -255,7 +255,7 @@ const retrieveHalfMatches = async (user) => {
 }
 const retrieveMatches = async (user) => {
     try {
-        let _matches = await Match.find({
+        let _matches = await Connection.find({
             $or: [
                 { userid_a: user.userid },
                 { userid_b: user.userid }
@@ -270,23 +270,23 @@ const retrieveMatches = async (user) => {
 module.exports = {
     doMatch: async (userid, linxuserid, matchedAt, roomkey) => {
         try {
-            let insertResult = await Match.create({ matchedAt: matchedAt, userid_a: userid, userid_b: linxuserid, roomkey: roomkey })
+            let insertResult = await Connection.create({ matchedAt: matchedAt, userid_a: userid, userid_b: linxuserid, roomkey: roomkey })
             return insertResult;
         } catch (error) {
-            console.log('error doing match...', error)
+            console.log('error doing Connection...', error)
         }
     },
     doHalfMatch: async (userid, linxuserid) => {
         try {
-            let insertResult = await HalfMatch.create({ matchingUserid: userid, matchedUserid: linxuserid });
+            let insertResult = await HalfConnection.create({ matchingUserid: userid, matchedUserid: linxuserid });
             return insertResult;
         } catch (error) {
-            console.log('error doing halfmatch...', error)
+            console.log('error doing HalfConnection...', error)
         }
     },
     removeFromHalfMatches: async (userid, linxuserid) => {
         try {
-            let removeResult = await HalfMatch.deleteOne(
+            let removeResult = await HalfConnection.deleteOne(
                 {
                     $or: [
                         { $and: [{ matchingUserid: userid }, { matchedUserid: linxuserid }] },
@@ -301,7 +301,7 @@ module.exports = {
     },
     removeFromMatches: async (userid, linxuserid) => {
         try {
-            let removeResult = await Match.deleteOne({
+            let removeResult = await Connection.deleteOne({
                 $or: [
                     { $and: [{ userid_a: userid }, { userid_b: linxuserid }] },
                     { $and: [{ userid_a: linxuserid }, { userid_b: userid }] }
@@ -314,7 +314,7 @@ module.exports = {
     },
     areHalfMatches: async (userid, linxuserid) => {
         try {
-            let _halfMatches = await HalfMatch.find({
+            let _halfMatches = await HalfConnection.find({
                 $or: [
                     { $and: [{ matchingUserid: userid }, { matchedUserid: linxuserid }] },
                     { $and: [{ matchingUserid: linxuserid }, { matchedUserid: userid }] }
@@ -346,8 +346,8 @@ module.exports = {
 
             if (_matches.length > 0) {
                 _matches.forEach(match => {
-                    excludedUserIds.add(match.userid_a);
-                    excludedUserIds.add(match.userid_b);
+                    excludedUserIds.add(Connection.userid_a);
+                    excludedUserIds.add(Connection.userid_b);
                 });
             }
             let _excludedAccounts = _activeAccounts;
@@ -369,7 +369,7 @@ module.exports = {
             let finalGroupUserIds = new Set(finalGroup.map(profile => profile.userid));
             if (halfMatches.length > 0) {    
                 halfMatches.forEach(halfMatch => {
-                    finalGroupUserIds.delete(halfMatch.matchedUserid);
+                    finalGroupUserIds.delete(HalfConnection.matchedUserid);
                 });
             }            
             let finalGroupUserIdsToArray = Array.from(finalGroupUserIds);

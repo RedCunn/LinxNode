@@ -8,28 +8,17 @@
         "active" : "",
         "activeToken" : "",
         "activeExpires" : "",
-        "myChains" : [
+        "chains" : [
             {
                 "chainid" : "",
-                "chainname" : "",
-                "createdAt" : ""
+                "chainname" : ""
             }
         ],
-        "myLinxs" : [
+        "linxs" : [
             {
-                "chainid" : "",
+                "chainids" : [],
                 "userid" : "",
-                "roomkey" : "",
-                "chainedAt" : ""
-
-            }
-        ],
-        "extendedChains" : [
-            {
-                "chainadminid" : "",
-                "chainid" : "",
-                "chainname" : "",
-                "onChainSince" : ""
+                "roomkey" : ""
             }
         ],
         "articles" : [

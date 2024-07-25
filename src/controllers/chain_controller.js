@@ -2,7 +2,6 @@ const Account = require('../schemas/Account');
 const ChainRequest = require('../schemas/ChainRequest');
 const chaining = require('./utils/chaining');
 const Article = require('../schemas/Article');
-const LinxExtent = require('../schemas/LinxExtent');
 const ChainIndex = require('../schemas/ChainIndex');
 
 module.exports = {
