@@ -1,0 +1,10 @@
+{
+    "ChainIndex" : {
+        "chainadminID" : "",
+        "chainID" : "",
+        "chainName" : "",
+        "userIDs" : [
+            {"userid" : ""}
+        ]
+    }
+}

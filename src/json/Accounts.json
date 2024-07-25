@@ -1,0 +1,41 @@
+{
+    "Account" : {
+        "userid" : "",
+        "createdAt" : "",
+        "linxname" : "",
+        "email" : "",
+        "password" : "",
+        "active" : "",
+        "activeToken" : "",
+        "activeExpires" : "",
+        "myChains" : [
+            {
+                "chainid" : "",
+                "chainname" : "",
+                "createdAt" : ""
+            }
+        ],
+        "myLinxs" : [
+            {
+                "chainid" : "",
+                "userid" : "",
+                "roomkey" : "",
+                "chainedAt" : ""
+
+            }
+        ],
+        "extendedChains" : [
+            {
+                "chainadminid" : "",
+                "chainid" : "",
+                "chainname" : "",
+                "onChainSince" : ""
+            }
+        ],
+        "articles" : [
+            {
+                "articleid" : ""
+            }
+        ]
+    }
+}
