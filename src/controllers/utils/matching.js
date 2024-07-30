@@ -247,7 +247,7 @@ const getCompatibilityPercentage = async (user, searchgroup) => {
 }
 const retrieveHalfMatches = async (user) => {
     try {
-        let _halfMatches = await HalfConnection.find({ matchingUserid: user.userid });
+        let _halfMatches = await HalfConnection.find({ initiator: user.userid });
         return _halfMatches;
     } catch (error) {
         console.log('error retrieving HalfMatches...', error)
@@ -270,7 +270,7 @@ const retrieveMatches = async (user) => {
 module.exports = {
     doMatch: async (userid, linxuserid, matchedAt, roomkey) => {
         try {
-            let insertResult = await Connection.create({ matchedAt: matchedAt, userid_a: userid, userid_b: linxuserid, roomkey: roomkey })
+            let insertResult = await Connection.create({ connectedAt: matchedAt, userid_a: userid, userid_b: linxuserid, roomkey: roomkey })
             return insertResult;
         } catch (error) {
             console.log('error doing Connection...', error)
@@ -278,7 +278,7 @@ module.exports = {
     },
     doHalfMatch: async (userid, linxuserid) => {
         try {
-            let insertResult = await HalfConnection.create({ matchingUserid: userid, matchedUserid: linxuserid });
+            let insertResult = await HalfConnection.create({ initiator: userid, receiver: linxuserid });
             return insertResult;
         } catch (error) {
             console.log('error doing HalfConnection...', error)
@@ -289,8 +289,8 @@ module.exports = {
             let removeResult = await HalfConnection.deleteOne(
                 {
                     $or: [
-                        { $and: [{ matchingUserid: userid }, { matchedUserid: linxuserid }] },
-                        { $and: [{ matchingUserid: linxuserid }, { matchedUserid: userid }] }
+                        { $and: [{ initiator: userid }, { receiver: linxuserid }] },
+                        { $and: [{ initiator: linxuserid }, { receiver: userid }] }
                     ]
                 }
             )
@@ -314,13 +314,19 @@ module.exports = {
     },
     areHalfMatches: async (userid, linxuserid) => {
         try {
+            let areHalfMatches = false;
             let _halfMatches = await HalfConnection.find({
                 $or: [
-                    { $and: [{ matchingUserid: userid }, { matchedUserid: linxuserid }] },
-                    { $and: [{ matchingUserid: linxuserid }, { matchedUserid: userid }] }
+                    { $and: [{ initiator: userid }, { receiver: linxuserid }] },
+                    { $and: [{ initiator: linxuserid }, { receiver: userid }] }
                 ]
             });
-            return _halfMatches;
+
+            if(_halfMatches.length > 0){
+                areHalfMatches = true;
+            }
+
+            return areHalfMatches;
         } catch (error) {
             console.log('error in areHalfMatches...', error)
         }
@@ -330,14 +336,14 @@ module.exports = {
 
             //----------- active accounts 
             let _activeAccounts = await usersFilterRepo.retrieveUsersWithActiveAccounts(user);
-            console.log('ACTIVE ACCOUNTS : ', _activeAccounts)
             //----------- exclude already on chain
             let _userAccount = await Account.findOne({userid : user.userid});
             let excludedUserIds = new Set();
 
-            console.log('USSER ACCCCCOUNTS LINXS : ', _userAccount.myLinxs)
-            if(_userAccount.myLinxs.length > 0){
-                _userAccount.myLinxs.forEach(linx => {
+            console.log('USSER ACCCCCOUNTS LINXS : ', _userAccount.linxs)
+
+            if(_userAccount.linxs.length > 0){
+                _userAccount.linxs.forEach(linx => {
                     excludedUserIds.add(linx.userid)
                 })
             }
@@ -346,14 +352,16 @@ module.exports = {
 
             if (_matches.length > 0) {
                 _matches.forEach(match => {
-                    excludedUserIds.add(Connection.userid_a);
-                    excludedUserIds.add(Connection.userid_b);
+                    excludedUserIds.add(match.userid_a === user.userid ? match.userid_b : match.userid_a);
                 });
             }
+
             let _excludedAccounts = _activeAccounts;
+
             if(excludedUserIds.size > 0 ){
                 _excludedAccounts = _activeAccounts.filter(acc => !excludedUserIds.has(acc.userid));
             }
+
             //-----------LOCATION
             let _filteredByLocation = await getMatchingLocation(user, _excludedAccounts);
             //--------------GENDER 
@@ -369,7 +377,7 @@ module.exports = {
             let finalGroupUserIds = new Set(finalGroup.map(profile => profile.userid));
             if (halfMatches.length > 0) {    
                 halfMatches.forEach(halfMatch => {
-                    finalGroupUserIds.delete(HalfConnection.matchedUserid);
+                    finalGroupUserIds.delete(halfMatch.receiver);
                 });
             }            
             let finalGroupUserIdsToArray = Array.from(finalGroupUserIds);

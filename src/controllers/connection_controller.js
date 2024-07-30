@@ -71,7 +71,7 @@ module.exports = {
 
         }
     },
-    matchLinxs: async (req, res, next) => {
+    connectProfiles: async (req, res, next) => {
         try {
             const userid = req.params.userid;
             const linxuserid = req.params.linxuserid;
@@ -80,7 +80,7 @@ module.exports = {
 
             let _areHalfMatches = await matching.areHalfMatches(userid, linxuserid);
 
-            if (_areHalfMatches.length > 0) {
+            if (_areHalfMatches) {
                 const currentDate = new Date().toISOString();
                 const _roomkey = uuidv4();
                 let _doMatch = await matching.doMatch(userid, linxuserid, currentDate, _roomkey);
@@ -113,7 +113,7 @@ module.exports = {
             })
         }
     },
-    getMatches: async (req, res, next) => {
+    getConnections: async (req, res, next) => {
         try {
 
             const userid = req.params.userid;
@@ -127,12 +127,9 @@ module.exports = {
 
             let matchUserIds = new Set();
             _matches.forEach(m => {
-                if (m.userid_a !== userid) {
-                    matchUserIds.add(m.userid_a);
-                }
-                if (m.userid_b !== userid) {
-                    matchUserIds.add(m.userid_b);
-                }
+                
+                matchUserIds.add(m.userid_a !== userid ? m.userid_a : m.userid_b);
+                
             })
 
             let accounts = await Account.find({
