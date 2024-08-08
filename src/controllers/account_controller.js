@@ -3,18 +3,14 @@ const axios = require('axios');
 const { v4: uuidv4 } = require('uuid');
 const jwt = require('jsonwebtoken');
 const moment = require('moment');
-const mailer = require('./utils/mailer')
-const places = require('./utils/googleplaces');
+const mailer = require('../services/mailer')
+const places = require('../services/googleplaces');
 
 const { default: mongoose } = require('mongoose');
 const Account = require('../schemas/Account');
 const User = require('../schemas/User');
-const Chat = require('../schemas/Chat');
-const GroupChat = require('../schemas/GroupChat');
 const Article = require('../schemas/Article');
-const chating = require('./utils/chating');
 const Job = require('../schemas/Job');
-const ChainIndex = require('../schemas/ChainIndex');
 
 function generateToken(userdata) {
 
@@ -357,190 +353,6 @@ module.exports = {
                 code: 1,
                 error: error.message,
                 message: 'Error deleting account...',
-                token: null,
-                userdata: null,
-                others: null
-            })
-        }
-    },
-    getChats: async (req, res, next) => {
-        try {
-            const { userid: _userid, linxuserid: _linxuserid } = req.params;
-
-            let chats = [];
-            let groupchats = [];
-
-            if (_linxuserid === 'null') {
-                chats = await Chat.find({
-                    $or: [
-                        { 'participants.userid_a': _userid },
-                        { 'participants.userid_b': _userid }
-                    ]
-                });
-                
-                groupchats = await GroupChat.find({'groupParticipants.userid': _userid})
-
-                if(groupchats.length > 0){
-                    for (let group of groupchats) {
-                        const chain = await ChainIndex.findOne({chainID : group.roomkey})   
-                        if(chain){
-                            group.conversationname = chain.chainName
-                        }
-                    }
-                }
-                
-            } else {
-                chats = await Chat.find({
-                    $or: [
-                        { $and: [{ 'participants.userid_a': _userid }, { 'participants.userid_b': _linxuserid }] },
-                        { $and: [{ 'participants.userid_a': _linxuserid }, { 'participants.userid_b': _userid }] }
-                    ]
-                });
-            }
-
-            let convernamesUserids = new Set();
-
-            chats.forEach(chat => {
-                if (chat.participants.userid_a !== _userid) {
-                    convernamesUserids.add(chat.participants.userid_a)
-                }
-
-                if (chat.participants.userid_b !== _userid) {
-                    convernamesUserids.add(chat.participants.userid_b)
-                }
-
-            })
-            let convernamesUseridsToArray = Array.from(convernamesUserids);
-            let accounts = await Account.find({ userid: { $in: convernamesUseridsToArray } })
-
-            let mapnamesids = new Map();
-            accounts.forEach(({ userid, linxname }) => {
-                mapnamesids.set(userid, linxname);
-            });
-
-            chats.forEach(chat => {
-                const { participants } = chat;
-                if (mapnamesids.has(participants.userid_a)) {
-                    chat.conversationname = mapnamesids.get(participants.userid_a);
-                }
-                if (mapnamesids.has(participants.userid_b)) {
-                    chat.conversationname = mapnamesids.get(participants.userid_b);
-                }
-            });
-
-
-
-            res.status(200).send({
-                code: 0,
-                error: null,
-                message: 'CHATS RECUPERADOS',
-                token: null,
-                userdata: groupchats,
-                others: chats
-            })
-        } catch (error) {
-            res.status(400).send({
-                code: 1,
-                error: error.message,
-                message: 'ERROR AL RECUPERAR CHAT',
-                token: null,
-                userdata: null,
-                others: null
-            })
-        }
-    },
-    storeChatMessage: async (req, res, next) => {
-        try {
-            const roomkey = req.params.roomkey;
-            const { message, participants } = req.body;
-            let insertResult = await chating.storeMessage(message, roomkey, participants.userid_a, participants.userid_b)
-
-            res.status(200).send({
-                code: 0,
-                error: null,
-                message: 'MESSAGE WAS STORED',
-                token: null,
-                userdata: null,
-                others: insertResult
-            })
-        } catch (error) {
-            res.status(400).send({
-                code: 1,
-                error: error.message,
-                message: 'MESSAGE COULDNT BE STORE',
-                token: null,
-                userdata: null,
-                others: null
-            })
-        }
-    },
-    storeGroupChatMessage: async (req, res, next) => {
-        try {
-            const roomkey = req.params.roomkey;
-            const { message, groupParticipants } = req.body;
-
-            let findResult = await GroupChat.findOne({roomkey : roomkey});
-
-            if(findResult){
-                findResult.messages.push(message);
-                await findResult.save();
-            }else{
-                let insertResult = await GroupChat.create({groupParticipants : groupParticipants , roomkey : roomkey , messages : [message]})
-                console.log('INSERT RESULT ON STORE GROUP CHAT MESSAGE : ', insertResult)
-            }
-
-
-            res.status(200).send({
-                code: 0,
-                error: null,
-                message: 'MENSAJE GUARDADO EN CHAT DE GRUPO',
-                token: null,
-                userdata: null,
-                others: null
-            })
-        } catch (error) {
-            res.status(400).send({
-                code: 1,
-                error: error.message,
-                message: 'NO HEMOS PODIDO GUARDAR EL MENSAJE EN CHAT DE GRUPO',
-                token: null,
-                userdata: null,
-                others: null
-            })
-        }
-    },
-    markMessagesAsRead: async (req, res, next) => {
-        try {
-
-            let messages = req.body
-            let userid = req.params.userid
-
-
-            const updateOperations = messages.map((m) => ({
-                updateOne: {
-                    filter: { 'messages': { $elemMatch: { _id: m._id } } },
-                    update: { $set: { 'messages.$.isRead': true } }
-                }
-            }));
-
-            let bulkresult = await Chat.bulkWrite(updateOperations);
-
-            console.log('BULKRESULT MARKING MESS : ', bulkresult)
-
-
-            res.status(200).send({
-                code: 0,
-                error: null,
-                message: `MESSAGES UPDATED AS READ by ${userid}`,
-                token: null,
-                userdata: null,
-                others: null
-            })
-        } catch (error) {
-            res.status(400).send({
-                code: 1,
-                error: error.message,
-                message: `ERROR UPDATing AS READ `,
                 token: null,
                 userdata: null,
                 others: null

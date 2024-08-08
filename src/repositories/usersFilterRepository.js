@@ -1,5 +1,5 @@
-const User = require("../../schemas/User");
-const Account = require("../../schemas/Account");
+const User = require("../schemas/User");
+const Account = require("../schemas/Account");
 
 module.exports = {
     retrieveUsersWithActiveAccounts : async (user) => {

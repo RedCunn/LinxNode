@@ -2,8 +2,8 @@ const mongoose = require('mongoose');
 
 let chainIndexSchema = new mongoose.Schema({
     createdAt : {type : Date},
-    chainAdminsID: [{type: String}],
-    chainID : {
+    chainAdminsId: [{type: String}],
+    chainId : {
         type: String,
         required: true
     },
@@ -11,7 +11,7 @@ let chainIndexSchema = new mongoose.Schema({
         type: String,
         required: true
     },
-    userIDs: {
+    userIds: {
         type: [String],
         validate: {
             validator: function(arr) {

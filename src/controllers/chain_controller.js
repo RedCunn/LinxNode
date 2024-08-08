@@ -1,6 +1,6 @@
 const Account = require('../schemas/Account');
 const ChainRequest = require('../schemas/ChainRequest');
-const chaining = require('./utils/chaining');
+const chainRepo = require('../repositories/chainRepo');
 const Article = require('../schemas/Article');
 const ChainIndex = require('../schemas/ChainIndex');
 
@@ -71,15 +71,15 @@ module.exports = {
             const chainsMap = new Map(Object.entries(chains));
             let joinReqState = '';
 
-            let requestStates = await chaining.isJoinChainRequested(userid, linxuserid, chainsMap);
+            let requestStates = await chainRepo.isJoinChainRequested(userid, linxuserid, chainsMap);
 
             for (const [key, value] of requestStates) {
                 if (value.state === 'ACCEPTED') {
-                    await chaining.joinChains(userid, linxuserid, key);
+                    await chainRepo.joinChains(userid, linxuserid, key);
                     joinReqState = 'ACCEPTING'
                 }
                 if (value.state === 'REQUESTED') {
-                    await chaining.doChainRequest(userid, linxuserid, key, value.name);
+                    await chainRepo.doChainRequest(userid, linxuserid, key, value.name);
                     joinReqState = 'REQUESTING'
                 }
             }
@@ -153,7 +153,7 @@ module.exports = {
             const linxuserid = req.params.linxuserid;
             const chainid = req.params.chainid;
 
-            await chaining.breakChain(userid, linxuserid, chainid);
+            await chainRepo.breakChain(userid, linxuserid, chainid);
 
             res.status(200).send({
                 code: 0,
@@ -210,7 +210,7 @@ module.exports = {
 
         linxuserid = linxuserid === 'null' ? null : linxuserid
 
-        let linxExtents = chaining.retrieveChainLinxExtents(userid, linxuserid)
+        let linxExtents = chainRepo.retrieveChainLinxExtents(userid, linxuserid)
 
         let accountArticles = [];
         let extentsAccounts = [];
@@ -396,7 +396,7 @@ module.exports = {
         const chainid = req.params.chainid;
         const linxid = req.params.linxid;
 
-        let result = chaining.removeLinxLeavingExtents(adminid , chainid, linxid)
+        let result = chainRepo.removeLinxLeavingExtents(adminid , chainid, linxid)
 
 
         try {

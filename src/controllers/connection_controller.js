@@ -1,7 +1,6 @@
 
 const { v4: uuidv4 } = require('uuid');
-let match = require('./utils/matching');
-const matching = require('./utils/matching');
+const connectionRepo = require('../repositories/connectionRepo');
 const Connection = require('../schemas/Connection');
 const Account = require('../schemas/Account');
 const Article = require('../schemas/Article');
@@ -15,7 +14,7 @@ module.exports = {
             
             let _user = await User.findOne({ userid: userid })
 
-            let matchingProfiles = await match.retrieveProfilesBasedOnCompatibility(_user);
+            let matchingProfiles = await connectionRepo.retrieveProfilesBasedOnCompatibility(_user);
 
             if(matchingProfiles.length > 0 ){
                 let userIDs = new Set();
@@ -78,18 +77,18 @@ module.exports = {
 
             let matchRank = 'HALF';
 
-            let _areHalfMatches = await matching.areHalfMatches(userid, linxuserid);
+            let _areHalfMatches = await connectionRepo.areHalfMatches(userid, linxuserid);
 
             if (_areHalfMatches) {
                 const currentDate = new Date().toISOString();
                 const _roomkey = uuidv4();
-                let _doMatch = await matching.doMatch(userid, linxuserid, currentDate, _roomkey);
+                let _doMatch = await connectionRepo.doMatch(userid, linxuserid, currentDate, _roomkey);
                 console.log('RESULT DOING MATCH -> ', _doMatch);
-                let _removeHalfMatch = await matching.removeFromHalfMatches(userid, linxuserid);
+                let _removeHalfMatch = await connectionRepo.removeFromHalfMatches(userid, linxuserid);
                 console.log('RESULT REMOVING FROM HALFMATCH -> ', _removeHalfMatch);
                 matchRank = 'FULL';
             } else {
-                let _doHalfMatch = await matching.doHalfMatch(userid, linxuserid);
+                let _doHalfMatch = await connectionRepo.doHalfMatch(userid, linxuserid);
                 console.log('RESULT DOING HALF MATCH ->', _doHalfMatch)
             }
 

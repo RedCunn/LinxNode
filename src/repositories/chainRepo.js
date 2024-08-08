@@ -1,9 +1,9 @@
 const { v4: uuidv4 } = require('uuid');
-const ChainReq = require('../../schemas/ChainRequest');
-const Account = require('../../schemas/Account');
-const Connection = require('../../schemas/Connection');
-const ChainIndex = require('../../schemas/ChainIndex');
-const ChainRequest = require('../../schemas/ChainRequest');
+const ChainReq = require('../schemas/ChainRequest');
+const Account = require('../schemas/Account');
+const Connection = require('../schemas/Connection');
+const ChainIndex = require('../schemas/ChainIndex');
+const ChainRequest = require('../schemas/ChainRequest');
 
 module.exports = {
     isJoinChainRequested: async (userid, linxid, chains) => {

@@ -1,6 +1,6 @@
-const Account = require('../../schemas/Account');
-const HalfConnection = require('../../schemas/HalfConnection');
-const Connection = require('../../schemas/Connection');
+const Account = require('../schemas/Account');
+const HalfConnection = require('../schemas/HalfConnection');
+const Connection = require('../schemas/Connection');
 const usersFilterRepo = require('./usersFilterRepository');
 
 const getMatchingLocation = async (user, searchgroup) => {

@@ -3,6 +3,7 @@ const routingSearchmedia = require('../routes/routingSearchmedia');
 const routingAccount = require('../routes/routingAccount');
 const routingProfile = require('../routes/routingProfile');
 const routingChain = require('../routes/routingChain');
+const routingChat = require('../routes/routingChat');
 
 module.exports = function(serverExpress){
     serverExpress.use('/api/Connection', routingConnection);
@@ -10,4 +11,5 @@ module.exports = function(serverExpress){
     serverExpress.use('/api/Account', routingAccount);
     serverExpress.use('/api/Profile', routingProfile);
     serverExpress.use('/api/Chain', routingChain);
+    serverExpress.use('/api/Chat', routingChat);
 }

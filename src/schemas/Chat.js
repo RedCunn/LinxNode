@@ -1,7 +1,7 @@
 const mongoose = require('mongoose');
 
 const chatSchema = new mongoose.Schema({
-    conversationname : {type : String, default : ''},
+    name : {type : String, default : ''},
     participants: {
         userid_a: {type : String, unique : false},
         userid_b: { type : String, unique : false}
@@ -15,7 +15,8 @@ const chatSchema = new mongoose.Schema({
             sender: { 
                 userid : {type: String, unique : false},
                 linxname : {type : String} 
-            }
+            },
+            to:{type : String}
         }
     ]
 })
