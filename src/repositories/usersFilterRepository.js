@@ -2,25 +2,6 @@ const User = require("../schemas/User");
 const Account = require("../schemas/Account");
 
 module.exports = {
-    retrieveUsersWithActiveAccounts : async (user) => {
-        return User
-                .find({})
-                .populate({
-                    path: 'accountid',
-                    match: { active: true }
-                })
-                .then(users => {
-                    if(user !== null ){
-                        return users.filter(u => u.userid !== user.userid);
-                    }else{
-                        return users;
-                    }
-                })
-                .catch(err => {
-                    console.log('ERROR RETRIEVING ACTIVE ACCOUNTS ', err)
-                    return [];
-                });
-    },
     retrieveAccountsFromUsers : async (userids) => {
         try {
             const accounts = await Account.find({ userid: {$in : userids} });

@@ -6,6 +6,7 @@ const Account = require('../schemas/Account');
 const Article = require('../schemas/Article');
 const ChainReq = require('../schemas/ChainRequest');
 const User = require('../schemas/User');
+const articleRepo = require('../repositories/articleRepo');
 
 module.exports = {
     shuffleProfiles: async (req, res, next) => {
@@ -14,45 +15,33 @@ module.exports = {
             
             let _user = await User.findOne({ userid: userid })
 
-            let matchingProfiles = await connectionRepo.retrieveProfilesBasedOnCompatibility(_user);
+            const candidateProfilesMap = await connectionRepo.findConnectionCandidates(_user);
 
-            if(matchingProfiles.length > 0 ){
-                let userIDs = new Set();
-                let artIDs = new Set();
-    
-                matchingProfiles.forEach(p => {
-                    userIDs.add(p.userid);
-                    if (p.articles !== undefined && p.articles.length > 0) {
-                        p.articles.forEach(artid => {
-                            artIDs.add(artid)
-                        })
-                    }
-                })
-                let artIDsToArray = Array.from(artIDs);
-                let accountArticles = await Article.find({ articleid: { $in: artIDsToArray } });
-    
-                let useridsToArray = Array.from(userIDs)
-                let userProfiles = await User.find({userid : {$in : useridsToArray}})
-    
-                const accountsAndProfiles = {accounts : matchingProfiles, users : userProfiles}
-    
+            if(candidateProfilesMap.size > 0 ){
+
+                let useridsArray = Array.from(candidateProfilesMap.keys());
+                let accountArticles = await articleRepo.retrieveAccountsArticles(useridsArray);
+                const arrayMap = Array.from(candidateProfilesMap.entries()).flat();
+                const evenPositions = arrayMap.filter((_, index) => index % 2 !== 0);
+
                 res.status(200).send({
                     code: 0,
                     error: null,
                     message: 'PERFILES COMPATIBLES ...',
                     token: null,
                     userdata: accountArticles,
-                    others: accountsAndProfiles
+                    others: evenPositions
                 })
     
             }else{
+                
                 res.status(200).send({
                     code: 0,
                     error: null,
                     message: 'PERFILES COMPATIBLES ...',
                     token: null,
                     userdata: [],
-                    others: {accounts : [], users : []}
+                    others: []
                 })
     
             }

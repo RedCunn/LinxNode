@@ -6,7 +6,6 @@ let userSchema = new mongoose.Schema({
     required: [true, '*Necesitas un user_id'],
     unique: true
   },
-  accountid: { type: mongoose.Schema.Types.ObjectId, ref: 'Account' },
   name: {
     type: String,
     required: [true, '* Nombre propio del user requerido'],
