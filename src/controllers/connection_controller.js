@@ -139,8 +139,6 @@ module.exports = {
             const arrayMap = Array.from(connectmap.entries()).flat();
             const evenPositions = arrayMap.filter((_, index) => index % 2 !== 0);
             
-            console.log('GETTING CONNECTIONS : MAPPING :---------:', evenPositions )
-
             res.status(200).send({
                 code: 0,
                 error: null,
