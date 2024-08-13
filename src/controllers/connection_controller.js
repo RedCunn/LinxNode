@@ -7,6 +7,7 @@ const Article = require('../schemas/Article');
 const ChainReq = require('../schemas/ChainRequest');
 const User = require('../schemas/User');
 const articleRepo = require('../repositories/articleRepo');
+const accountRepo = require('../repositories/accountRepo');
 
 module.exports = {
     shuffleProfiles: async (req, res, next) => {
@@ -106,35 +107,47 @@ module.exports = {
 
             const userid = req.params.userid;
 
-            let _matches = await Connection.find({
-                $or: [
-                    { userid_a: userid },
-                    { userid_b: userid }
-                ]
-            })
+            let connections = await connectionRepo.retrieveConnections(userid);
 
             let matchUserIds = new Set();
-            _matches.forEach(m => {
+            connections.forEach(m => {
                 
                 matchUserIds.add(m.userid_a !== userid ? m.userid_a : m.userid_b);
                 
             })
+            let accounts = await accountRepo.retrieveAccounts(Array.from(matchUserIds));
+            let accountArticles = await articleRepo.retrieveAccountsArticles(Array.from(matchUserIds));
 
-            let accounts = await Account.find({
-                userid: { $in: Array.from(matchUserIds) }
+            let connectmap = new Map();
+
+            Array.from(matchUserIds).forEach(user => {
+                connectmap.set(user, {connection : {}, account : {}, articles : []})
             })
 
-            let accountArticles = await Article.find({ userid: { $in: Array.from(matchUserIds) } });
+            connections.forEach(conn => {
+                connectmap.get(conn.userid_a !== userid ? conn.userid_a : conn.userid_b).connection = conn;
+            })
 
-            let accountsAndArticles = {accounts : accounts , articles : accountArticles}
+            accounts.forEach(acc => {
+                connectmap.get(acc.userid).account = acc;
+            })
+
+            accountArticles.forEach(art => {
+                connectmap.get(art.userid).articles.push(art)
+            })
+
+            const arrayMap = Array.from(connectmap.entries()).flat();
+            const evenPositions = arrayMap.filter((_, index) => index % 2 !== 0);
+            
+            console.log('GETTING CONNECTIONS : MAPPING :---------:', evenPositions )
 
             res.status(200).send({
                 code: 0,
                 error: null,
                 message: 'MATCH ACCOUNTS WERE RETRIEVED : ',
                 token: null,
-                userdata: _matches,
-                others: accountsAndArticles
+                userdata: evenPositions,
+                others: null
             })
         } catch (error) {
             res.status(400).send({
