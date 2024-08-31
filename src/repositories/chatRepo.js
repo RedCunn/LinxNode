@@ -109,8 +109,6 @@ module.exports = {
         try {
             let chatExists = await checkChatExist(roomkey);
 
-            console.log('mess que entra : ', message);
-
             if (chatExists) {
                 let updateResult = await Chat.findOneAndUpdate({roomkey : roomkey},{ $push: { messages: message  } }, {new : true})
                 return updateResult;

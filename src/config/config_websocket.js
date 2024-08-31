@@ -35,6 +35,11 @@ const ioFn = (httpServer) => {
             io.to(data.roomkey).emit('get_message',data.message)
         })
 
+        socket.on('readMessages', (data) => {
+            const reader = {roomkey : data.roomkey, userid : data.userid, read : true };
+            io.to(data.roomkey).emit('readingMessages', reader)
+        })
+
         socket.on('messageRead' , async(data) => {
             try {
                 console.log('MESSAGE ON SOCKET TO READ : ', data)

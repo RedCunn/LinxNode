@@ -7,7 +7,7 @@ module.exports = {
 
             const roomkey = req.params.roomkey;
 
-            let chat = chatRepo.getChat(roomkey);
+            let chat = await chatRepo.getChat(roomkey);
 
             res.status(200).send({
                 code: 0,
@@ -56,7 +56,7 @@ module.exports = {
     storeMessage: async (req, res, next) => {
         try {
             const roomkey = req.params.roomkey;
-            const { message } = req.body;
+            const message = req.body;
             let insertResult = await chatRepo.storeMessage(message, roomkey)
             
             if(insertResult === null){
