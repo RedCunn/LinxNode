@@ -288,7 +288,9 @@ const getUserConnections = async (userid) => {
 module.exports = {
     doMatch: async (userid, linxuserid, matchedAt, roomkey) => {
         try {
-            let insertResult = await Connection.create({ connectedAt: matchedAt, userid_a: userid, userid_b: linxuserid, roomkey: roomkey, active : true })
+            const insertResult = await Connection.create({ connectedAt: matchedAt, userid_a: userid, userid_b: linxuserid, roomkey: roomkey, active : true });
+            await Account.updateOne({userid : userid}, {$push : {connections : roomkey}});
+
             return insertResult;
         } catch (error) {
             console.log('error doing Connection...', error)

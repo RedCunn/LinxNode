@@ -44,6 +44,9 @@ let accountSchema = new mongoose.Schema({
             roomkey : {type: String}
         }
     ],
+    connections : [
+        {type : String}
+    ],
     articles: {
         type: [{
             type: String

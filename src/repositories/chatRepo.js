@@ -92,13 +92,36 @@ module.exports = {
         }
     },
     getChats : async(userid) => {
-
         try {
             let chats = [];
             let groupchats = [];
 
-            chats = await Chat.find({$or : [{participants : {userid_a : userid}}, {participants : {userid_b : userid}}]});
-            groupchats = await GroupChat.find({'groupParticipants.userid': { $in: [userid] }}).exec(); 
+            const userAccount = await Account.findOne({userid : userid})
+
+            // private chats indexes: linx{roomkey , connections 
+            let chatindexes = [];
+            if(userAccount.connections.length > 0){
+                userAccount.connections.forEach(conn => {
+                    chatindexes.push(conn)
+                })
+            }
+            if(userAccount.linxs.length > 0){
+                userAccount.linxs.forEach(linx => {
+                    chatindexes.push(linx.roomkey)
+                })
+            }
+            if(chatindexes.length > 0){
+                chats = await Chat.find({roomkey : {$in : chatindexes}})
+            }
+            
+            //groupchats index : account{chains{chainid 
+            if(userAccount.chains.length > 0){
+                let chainids = [];
+                userAccount.chains.forEach(chain => {
+                    chainids.push(chain.chainid)
+                })
+                groupchats = await GroupChat.find({roomkey : {$in : chainids}})
+            }
 
             return {chats, groupchats};
         } catch (error) {
