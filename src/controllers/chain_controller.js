@@ -3,8 +3,62 @@ const ChainRequest = require('../schemas/ChainRequest');
 const chainRepo = require('../repositories/chainRepo');
 const Article = require('../schemas/Article');
 const ChainIndex = require('../schemas/ChainIndex');
+const interactionRepo = require('../repositories/interactionRepo');
 
 module.exports = {
+    inviteToChain : async(req,res,next)=> {
+        try{
+            const userid = req.params.userid;
+            const chain = req.body;
+
+            const insertChain = await chainRepo.createChain(userid, chain);
+
+            for (const guest of chain.accounts) {
+                if(guest.userid !== userid){
+                    await interactionRepo.createChainInviteInteraction(insertChain.createdAt , userid ,guest.userid, insertChain);   
+                }
+            }
+
+            res.status(200).send({
+            code: 0,
+            error: null,
+            message: 'CHAIN AND INVITATIONS CREATED SUCCESSFULLY',
+            token: null,
+            userdata: null,
+            others: null
+            })
+        }catch(error){
+            res.status(400).send({
+            code: 1,
+            error: error.message,
+            message: 'ERROR CREATING CHAIN !!!',
+            token: null,
+            userdata: null,
+            others: null
+            })
+        }
+    },
+    checkNameAvailability : async(req,res,next)=> {
+        try{
+            res.status(200).send({
+            code: 0,
+            error: null,
+            message: '',
+            token: null,
+            userdata: null,
+            others: null    
+        })
+        }catch(error){
+            res.status(400).send({
+            code: 1,
+            error: error.message,
+            message: '',
+            token: null,
+            userdata: null,
+            others: null
+            })
+        }
+    },
     getMyLinxs: async (req, res, next) => {
         try {
             const _userid = req.params.userid;

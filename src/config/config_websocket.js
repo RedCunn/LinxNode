@@ -12,8 +12,19 @@ const ioFn = (httpServer) => {
 
     io.on('connection', (socket) => {
 
-        socket.on('userConnected',(data) => {
-            socket.broadcast.emit('linx_connected', data.linxname);
+        socket.on('ping_users',(data) => {
+            for(const user of data.userids){
+                if (io.sockets.adapter.rooms.get(user)) {
+                    io.to(data.userid).emit('user_pong', user);
+                } else {
+                    console.log(`Usuario ${user} no está conectado`);
+                }    
+            }
+        })
+        socket.on('userDisconnected',(data) => {
+            for (const room of data.roomkeys) {
+                io.to(room).emit('user_disconnected', data.userid);   
+            }
         })
         socket.on('init_user_room',(data) => {
             console.log('INIT USER ROOM ...', data.roomkey)
@@ -36,7 +47,7 @@ const ioFn = (httpServer) => {
         })
 
         socket.on('readMessages', (data) => {
-            const reader = {roomkey : data.roomkey, userid : data.userid, read : true };
+            const reader = {roomkey : data.roomkey, userid : data.userid, read : data.chatopen };
             io.to(data.roomkey).emit('readingMessages', reader)
         })
 

@@ -6,6 +6,19 @@ const ChainIndex = require('../schemas/ChainIndex');
 const ChainRequest = require('../schemas/ChainRequest');
 
 module.exports = {
+
+    createChain : async (userid , chain) => {
+        try {
+            const newchain = {createdAt : chain.createdAt , active : false, chainAdminsId : chain.chainAdminsId, chainId : uuidv4(), chainName : chain.chainName, userIds : []}
+            for (const account of chain.accounts) {
+             newchain.userIds.push(account.userid);   
+            }
+            const insertResult = await ChainIndex.create(newchain);
+            console.log('INSERT RESULT CREATING CHAIN : ', insertResult);
+        } catch (error) {
+            console.log('ERROR CREATING CHAIN : ', error)
+        }
+    },
     isJoinChainRequested: async (userid, linxid, chains) => {
         try {
             let reqStates = new Map();

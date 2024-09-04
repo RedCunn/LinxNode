@@ -24,17 +24,17 @@ const createGroupChat = async (chat) => {
 }
 
 const checkChatExist = async (roomkey) => {
- 
-    try {
-        let chatExists = await Chat.findOne({roomkey : roomkey})
-        let groupChatExists = await GroupChat.findOne({roomkey : roomkey});
 
-        if(chatExists !== null){
+    try {
+        let chatExists = await Chat.findOne({ roomkey: roomkey })
+        let groupChatExists = await GroupChat.findOne({ roomkey: roomkey });
+
+        if (chatExists !== null) {
             return true;
-        }else{
-            if(groupChatExists !== null){
+        } else {
+            if (groupChatExists !== null) {
                 return true;
-            }else{
+            } else {
                 return false;
             }
         }
@@ -66,12 +66,12 @@ const getParticipants = async (userids) => {
 
 const getChainName = async (chainid) => {
     try {
-        
-        let chain = await Chain.findOne({chainId : chainid});
 
-        if(chain){
+        let chain = await Chain.findOne({ chainId: chainid });
+
+        if (chain) {
             return chain;
-        }else{
+        } else {
             return '';
         }
     } catch (error) {
@@ -82,48 +82,59 @@ const getChainName = async (chainid) => {
 
 module.exports = {
 
-    getChat : async(roomkey) => {
+    getChat: async (roomkey) => {
 
         try {
-            let chat = await Chat.findOne({roomkey : roomkey});
+            let chat = await Chat.findOne({ roomkey: roomkey });
             return chat;
         } catch (error) {
             console.log('error retrieving chat ... ', error)
         }
     },
-    getChats : async(userid) => {
+    getChats: async (userid) => {
         try {
             let chats = [];
             let groupchats = [];
 
-            const userAccount = await Account.findOne({userid : userid})
+            const userAccount = await Account.findOne({ userid: userid })
 
             // private chats indexes: linx{roomkey , connections 
             let chatindexes = [];
-            if(userAccount.connections.length > 0){
+            if (userAccount.connections.length > 0) {
                 userAccount.connections.forEach(conn => {
                     chatindexes.push(conn)
                 })
             }
-            if(userAccount.linxs.length > 0){
+            if (userAccount.linxs.length > 0) {
                 userAccount.linxs.forEach(linx => {
                     chatindexes.push(linx.roomkey)
                 })
             }
-            if(chatindexes.length > 0){
-                chats = await Chat.find({roomkey : {$in : chatindexes}})
+            if (chatindexes.length > 0) {
+                chats = await Chat.find({ roomkey: { $in: chatindexes } })
+
+                for (const chat of chats) {
+                    const otherUserid = chat.participants.userid_a !== userid ? chat.participants.userid_a : chat.participants.userid_b;
+                    const other = await Account.findOne({ userid: otherUserid })
+                    chat.name = other.linxname;
+                }
             }
-            
+
             //groupchats index : account{chains{chainid 
-            if(userAccount.chains.length > 0){
+            if (userAccount.chains.length > 0) {
                 let chainids = [];
                 userAccount.chains.forEach(chain => {
                     chainids.push(chain.chainid)
                 })
-                groupchats = await GroupChat.find({roomkey : {$in : chainids}})
+                groupchats = await GroupChat.find({ roomkey: { $in: chainids } })
+
+                for (const chat of groupchats) {
+                    const chain = await Chain.findOne({chainId : chat.roomkey})
+                    chat.name = chain.chainName;
+                }
             }
 
-            return {chats, groupchats};
+            return { chats, groupchats };
         } catch (error) {
             console.log('error retrieving user chats ... ', error)
         }
@@ -133,17 +144,17 @@ module.exports = {
             let chatExists = await checkChatExist(roomkey);
 
             if (chatExists) {
-                let updateResult = await Chat.findOneAndUpdate({roomkey : roomkey},{ $push: { messages: message  } }, {new : true})
+                let updateResult = await Chat.findOneAndUpdate({ roomkey: roomkey }, { $push: { messages: message } }, { new: true })
                 return updateResult;
             } else {
-             
+
                 let chat = {
-                    participants : {
-                        userid_a : message.sender.userid,
-                        userid_b : message.to
+                    participants: {
+                        userid_a: message.sender.userid,
+                        userid_b: message.to
                     },
-                    roomkey : roomkey,
-                    messages : []
+                    roomkey: roomkey,
+                    messages: []
                 }
 
                 chat.messages.push(message);
@@ -163,11 +174,11 @@ module.exports = {
 
             if (chatExists) {
                 console.log('mess que entra en grupo: ', message);
-                let updateResult = await GroupChat.findOneAndUpdate({roomkey : roomkey},{ $push: { messages: message  } }, {new : true})
+                let updateResult = await GroupChat.findOneAndUpdate({ roomkey: roomkey }, { $push: { messages: message } }, { new: true })
                 return updateResult;
             } else {
-             
-                let  userids = [];
+
+                let userids = [];
 
                 message.readBy.forEach(element => {
                     userids.push(element.userid)
@@ -177,11 +188,11 @@ module.exports = {
                 const chatname = getChainName(message.to);
 
                 let chat = {
-                    name : chatname,
-                    chainId : message.to,
-                    groupParticipants : participants,
-                    roomkey : roomkey, 
-                    messages : []
+                    name: chatname,
+                    chainId: message.to,
+                    groupParticipants: participants,
+                    roomkey: roomkey,
+                    messages: []
                 }
 
                 chat.messages.push(message);
@@ -196,19 +207,19 @@ module.exports = {
             return null;
         }
     },
-    markReadMessages : async (roomkey , userid) => {
+    markReadMessages: async (roomkey, userid) => {
         try {
-            
+
             const [chat, groupChat] = await Promise.all([
                 Chat.findOne({ roomkey: roomkey }).exec(),
                 GroupChat.findOne({ roomkey: roomkey }).exec()
             ]);
 
-            let  updatedResult = null;
+            let updatedResult = null;
 
-            if(chat){
+            if (chat) {
 
-                 updatedResult = await Chat.updateMany(
+                updatedResult = await Chat.updateMany(
                     {
                         roomkey: roomkey,
                         'messages.to': userid,
@@ -224,7 +235,7 @@ module.exports = {
 
                 return updatedResult;
 
-            }else if(groupChat){
+            } else if (groupChat) {
 
 
                 updatedResult = await GroupChat.updateMany(
@@ -241,7 +252,7 @@ module.exports = {
                             { 'reader.userid': userid, 'reader.isRead': false }
                         ]
                     }
-                );        
+                );
 
                 return updatedResult;
 

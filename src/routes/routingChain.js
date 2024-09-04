@@ -2,6 +2,9 @@ const express = require('express');
 const router = express.Router();
 const ChainController = require('../controllers/chain_controller');
 
+router.post('/:userid', ChainController.inviteToChain);
+router.get('/:userid/name/:chainname', ChainController.checkNameAvailability)
+
 router.get('/:userid/chain/:chainid', ChainController.getMyLinxs);
 router.get('/:userid/chainreqs', ChainController.getJoinChainRequests);
 router.post('/:userid/:linxuserid', ChainController.requestChain);
