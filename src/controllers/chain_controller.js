@@ -1,4 +1,5 @@
 const Account = require('../schemas/Account');
+const accountRepo = require('../repositories/accountRepo');
 const ChainRequest = require('../schemas/ChainRequest');
 const chainRepo = require('../repositories/chainRepo');
 const Article = require('../schemas/Article');
@@ -6,56 +7,101 @@ const ChainIndex = require('../schemas/ChainIndex');
 const interactionRepo = require('../repositories/interactionRepo');
 
 module.exports = {
-    inviteToChain : async(req,res,next)=> {
-        try{
-            const userid = req.params.userid;
-            const chain = req.body;
+    inviteToChain: async (req, res, next) => {
+        try {
+            const {chain, userid} = req.body;
+
+            console.log('CHAIN REQ EM EL BODY : ', chain)
 
             const insertChain = await chainRepo.createChain(userid, chain);
 
-            for (const guest of chain.accounts) {
-                if(guest.userid !== userid){
-                    await interactionRepo.createChainInviteInteraction(insertChain.createdAt , userid ,guest.userid, insertChain);   
+            if (insertChain) {
+
+                const userAccountUpdate = await accountRepo.addChain(userid, insertChain.chainId, insertChain.chainName);
+
+                if (userAccountUpdate) {
+
+                    for (const guest of chain.accounts) {
+                        if (guest.userid !== userid) {
+                            await interactionRepo.createChainInviteInteraction(insertChain.createdAt, userid, guest.userid, insertChain);
+                        }
+                    }
+
+                } else {
+                    throw new Error;
                 }
+
+            } else {
+                throw new Error;
             }
 
             res.status(200).send({
-            code: 0,
-            error: null,
-            message: 'CHAIN AND INVITATIONS CREATED SUCCESSFULLY',
-            token: null,
-            userdata: null,
-            others: null
+                code: 0,
+                error: null,
+                message: 'CHAIN AND INVITATIONS CREATED SUCCESSFULLY',
+                token: null,
+                userdata: null,
+                others: null
             })
-        }catch(error){
+        } catch (error) {
             res.status(400).send({
-            code: 1,
-            error: error.message,
-            message: 'ERROR CREATING CHAIN !!!',
-            token: null,
-            userdata: null,
-            others: null
+                code: 1,
+                error: error.message,
+                message: 'ERROR CREATING CHAIN !!!',
+                token: null,
+                userdata: null,
+                others: null
             })
         }
     },
-    checkNameAvailability : async(req,res,next)=> {
-        try{
+    checkNameAvailability: async (req, res, next) => {
+        try {
+            const chainname = req.params.name;
+
+            const isAvailable = await chainRepo.checkChainNameAvailability(chainname)
+
             res.status(200).send({
-            code: 0,
-            error: null,
-            message: '',
-            token: null,
-            userdata: null,
-            others: null    
-        })
-        }catch(error){
+                code: 0,
+                error: null,
+                message: '',
+                token: null,
+                userdata: isAvailable,
+                others: null
+            })
+        } catch (error) {
             res.status(400).send({
-            code: 1,
-            error: error.message,
-            message: '',
-            token: null,
-            userdata: null,
-            others: null
+                code: 1,
+                error: error.message,
+                message: '',
+                token: null,
+                userdata: null,
+                others: null
+            })
+        }
+    },
+    getChainsByIds: async (req, res, next) => {
+        const ids = req.query.ids;
+        const chainIds = ids.split(',');
+
+        const chains = await chainRepo.getChains(chainIds);
+
+        try {
+            res.status(200).send({
+                code: 0,
+                error: null,
+                message: '',
+                token: null,
+                userdata: chains,
+                others: null
+            })
+        } catch (error) {
+            res.status(400).send({
+                code: 1,
+                error: error.message,
+                message: '',
+                token: null,
+                userdata: null,
+                others: null
             })
         }
     },
@@ -75,11 +121,11 @@ module.exports = {
             } else {
                 _myLinxPromises = _userAccount.myLinxs.map(async (linx) => {
                     const chainIdPromises = linx.chainIds
-                                            .filter(chainid => chainid === _chainid)
-                                            .map(async () => {
-                                                const account = await Account.findOne({ userid: linx.userid });
-                                                return account;
-                                            });
+                        .filter(chainid => chainid === _chainid)
+                        .map(async () => {
+                            const account = await Account.findOne({ userid: linx.userid });
+                            return account;
+                        });
                     return Promise.all(chainIdPromises);
                 });
             }
@@ -408,7 +454,7 @@ module.exports = {
             let chainIndexes = await ChainIndex.find({ chainID: { $in: chainIdsArray } })
 
             for (let index of chainIndexes) {
-                let adminGroup = { chainadminID: index.chainadminID, chainID : index.chainID, chainName: index.chainName, accounts: [] }
+                let adminGroup = { chainadminID: index.chainadminID, chainID: index.chainID, chainName: index.chainName, accounts: [] }
                 for (let userid of index.userIDs) {
                     let account = await Account.findOne({ userid: userid })
                     adminGroup.accounts.push(account);
@@ -418,10 +464,10 @@ module.exports = {
             }
 
             for (const id of useridsSet) {
-                let articles = await Article.find({userid : id})
-                accountArticles.push(articles);   
+                let articles = await Article.find({ userid: id })
+                accountArticles.push(articles);
             }
-            
+
 
             console.log('CUENTAS AGRUPADAS POR ADMIN DE CADENA : ', accountsGroupedByChainAdmin)
 
@@ -450,7 +496,7 @@ module.exports = {
         const chainid = req.params.chainid;
         const linxid = req.params.linxid;
 
-        let result = chainRepo.removeLinxLeavingExtents(adminid , chainid, linxid)
+        let result = chainRepo.removeLinxLeavingExtents(adminid, chainid, linxid)
 
 
         try {

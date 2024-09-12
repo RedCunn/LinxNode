@@ -15,8 +15,29 @@ module.exports = {
             }
             const insertResult = await ChainIndex.create(newchain);
             console.log('INSERT RESULT CREATING CHAIN : ', insertResult);
+            return insertResult;
         } catch (error) {
             console.log('ERROR CREATING CHAIN : ', error)
+            return null;
+        }
+    },
+    checkChainNameAvailability : async (chainname) => {
+        try {
+            const query = await ChainIndex.find({chainName : chainname});
+
+            return query.length > 0 ? false : true;
+        } catch (error) {
+            console.log('ERROR CHECKING CHAIN NAME AVAILABILITY : ', error)
+            return false;
+        }
+    },
+    getChains : async (chainids) => {
+        try {
+            const chains = await ChainIndex.find({ chainId: { $in: chainids } });
+            return chains;
+        } catch (error) {
+            console.log('ERROR GETTING CHAINS BY IDS : ', error);
+            return null;
         }
     },
     isJoinChainRequested: async (userid, linxid, chains) => {

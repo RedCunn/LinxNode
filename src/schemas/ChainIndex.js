@@ -1,7 +1,11 @@
 const mongoose = require('mongoose');
 
 let chainIndexSchema = new mongoose.Schema({
-    createdAt : {type : Date},
+    createdAt : {
+        type : Date,
+        required: [true],
+        default: Date.now
+    },
     active : {type : Boolean},
     chainAdminsId: [{type: String}],
     chainId : {
