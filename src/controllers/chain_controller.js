@@ -110,30 +110,19 @@ module.exports = {
             const _userid = req.params.userid;
             const _chainid = req.params.chainid;
 
-            let _userAccount = await Account.findOne({ userid: _userid });
-
             let _myLinxPromises;
+
             if (_chainid === 'null') {
-                _myLinxPromises = _userAccount.myLinxs.map(async (linx, i) => {
-                    const account = await Account.findOne({ userid: linx.userid });
-                    return account;
-                })
+                
             } else {
-                _myLinxPromises = _userAccount.myLinxs.map(async (linx) => {
-                    const chainIdPromises = linx.chainIds
-                        .filter(chainid => chainid === _chainid)
-                        .map(async () => {
-                            const account = await Account.findOne({ userid: linx.userid });
-                            return account;
-                        });
-                    return Promise.all(chainIdPromises);
-                });
+                const chain = await chainRepo.getChains([_chainid])
+                const linxsids = chain[0].userIds;
+                _myLinxPromises = await accountRepo.retrieveAccounts(linxsids);
+
             }
 
-            const accounts = await Promise.all(_myLinxPromises);
-
             let artIDs = new Set();
-            accounts.forEach(p => {
+            _myLinxPromises.forEach(p => {
                 if (p.articles !== undefined && p.articles.length > 0) {
                     p.articles.forEach(artid => {
                         artIDs.add(artid)
@@ -148,8 +137,8 @@ module.exports = {
                 error: null,
                 message: 'Cadena recuperada',
                 token: null,
-                userdata: accountArticles,
-                others: accounts.flat()
+                userdata: _myLinxPromises.flat(),
+                others: accountArticles
             })
         } catch (error) {
             res.status(200).send({
