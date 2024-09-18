@@ -8,6 +8,7 @@ const ChainReq = require('../schemas/ChainRequest');
 const User = require('../schemas/User');
 const articleRepo = require('../repositories/articleRepo');
 const accountRepo = require('../repositories/accountRepo');
+const interactionRepo = require('../repositories/interactionRepo');
 
 module.exports = {
     shuffleProfiles: async (req, res, next) => {
@@ -72,10 +73,11 @@ module.exports = {
             if (_areHalfMatches) {
                 const currentDate = new Date().toISOString();
                 const _roomkey = uuidv4();
-                let _doMatch = await connectionRepo.doMatch(userid, linxuserid, currentDate, _roomkey);
-                console.log('RESULT DOING MATCH -> ', _doMatch);
-                let _removeHalfMatch = await connectionRepo.removeFromHalfMatches(userid, linxuserid);
-                console.log('RESULT REMOVING FROM HALFMATCH -> ', _removeHalfMatch);
+                const _doMatch = await connectionRepo.doMatch(userid, linxuserid, currentDate, _roomkey);
+                const _removeHalfMatch = await connectionRepo.removeFromHalfMatches(userid, linxuserid);
+                await interactionRepo.createNewConnectionInteraction(currentDate, userid , linxuserid , _doMatch)
+                await interactionRepo.createNewConnectionInteraction(currentDate, linxuserid , userid , _doMatch)
+
                 matchRank = 'FULL';
             } else {
                 let _doHalfMatch = await connectionRepo.doHalfMatch(userid, linxuserid);

@@ -8,6 +8,10 @@ const InteractionSchema = new mongoose.Schema({
         enum : ['INVITE','ONCHAIN','OFFCHAIN','CONNECTION'],
         required : true
     },
+    checked : {
+        type : Boolean,
+        default : false
+    },
     from: {type : String},
     to: {type : String},
     object : {type : mongoose.Schema.Types.Mixed}
