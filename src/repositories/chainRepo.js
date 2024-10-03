@@ -40,6 +40,24 @@ module.exports = {
             return null;
         }
     },
+    getAllUserLinxs : async (chainids, userid) => {
+      try {
+        const chains = await ChainIndex.find({ chainId: { $in: chainids } });
+        let linxsids = new Set();
+
+        for (const chain of chains) {
+            
+            const ids = chain.userIds.filter(id => id !== userid);
+            ids.forEach(id => linxsids.add(id)); 
+        }
+
+        return Array.from(linxsids);
+
+      } catch (error) {
+        console.log('ERROR GETTING USERIDS FROM USER CHAINS : ', error);
+        return null;
+      }  
+    },
     isJoinChainRequested: async (userid, linxid, chains) => {
         try {
             let reqStates = new Map();

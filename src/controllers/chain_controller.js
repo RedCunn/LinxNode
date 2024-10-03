@@ -114,11 +114,17 @@ module.exports = {
 
             if (_chainid === 'null') {
                 
+                const useraccount = await accountRepo.retrieveAccounts([_userid])
+                const chainIds = [];
+                useraccount[0].chains.forEach(chain => {
+                    chainIds.push(chain.chainid)
+                })
+               const linxsIds = await chainRepo.getAllUserLinxs(chainIds , _userid)
+               _myLinxPromises = await accountRepo.retrieveAccounts(linxsIds);
             } else {
                 const chain = await chainRepo.getChains([_chainid])
                 const linxsids = chain[0].userIds;
                 _myLinxPromises = await accountRepo.retrieveAccounts(linxsids);
-
             }
 
             let artIDs = new Set();
