@@ -1,3 +1,9 @@
+import { S3Client , PutObjectCommand, GetObjectCommand, DeleteObjectCommand } from '@aws-sdk/client-s3';
+import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
+
+import dotenv from 'dotenv';
+import sharp from 'sharp';
+
 const bcrypt = require('bcrypt');
 const axios = require('axios');
 const { v4: uuidv4 } = require('uuid');
@@ -22,6 +28,22 @@ function generateToken(userdata) {
     const token = jwt.sign(payload, process.env.JWT_SECRETKEY)
     return token;
 }
+
+dotenv.config();
+
+const bucketName = process.env.BUCKET_NAME
+const bucketRegion = process.env.BUCKET_REGION 
+const bucketAccessKey = process.env.BUCKET_ACCESS_KEY 
+const bucketAccessSecretKey = process.env.BUCKET_ACCESS_SECRET_KEY 
+
+const s3 = new S3Client({
+    credentials : {
+        accessKeyId : bucketAccessKey,
+        secretAccessKey : bucketAccessSecretKey
+    },
+    region : bucketRegion
+})
+
 
 module.exports = {
 
@@ -365,13 +387,28 @@ module.exports = {
             const { title, body, postedOn, useAsProfilePic, articleid } = req.body;
             let insertArticle;
             let filePath = '';
+
             if (req.file) {
-                filePath = _userid + '/' + req.file.originalname;
-                insertArticle = await Article.create({ userid: _userid, articleid, postedOn, useAsProfilePic, title, body, img: filePath })
+
+                const filename = uuidv4() + '_' + req.file.originalname;
+                const buffer = await sharp(req.file.buffer).resize({height :  1080, width : 1920, fit: "contain"}).toBuffer();
+
+                const params = {
+                    Bucket : bucketName,
+                    Key : filename,
+                    Body : buffer,
+                    ContentType : req.file.mimetype
+                }
+                const putCommand = new PutObjectCommand(params);
+                await s3.send(putCommand)
+                
+                insertArticle = await Article.create({ userid: _userid, articleid, postedOn, useAsProfilePic, title, body, img: filename , imgUrl : ''})
+
             } else {
                 insertArticle = await Article.create({ userid: _userid, articleid, postedOn, useAsProfilePic, title, body })
             }
-            let insertArticleRef = await Account.updateOne({ userid: _userid }, { $push: { articles: insertArticle.articleid } })
+            
+            await Account.updateOne({ userid: _userid }, { $push: { articles: insertArticle.articleid } })
 
             res.status(200).send({
                 code: 0,
@@ -379,7 +416,7 @@ module.exports = {
                 message: 'saved new article!!!',
                 token: null,
                 userdata: null,
-                others: filePath
+                others: null
             })
         } catch (error) {
             res.status(400).send({
@@ -399,18 +436,46 @@ module.exports = {
             const _artid = req.params.artid;
             const { title, body, postedOn, useAsProfilePic } = req.body;
 
-            let updateArticle;
-            let filePath = '';
-            if (req.file) {
-                filePath = _userid + '/' + req.file.originalname;
-                updateArticle = await Article.updateOne({ userid: _userid, articleid: _artid }, { title, body, postedOn, useAsProfilePic, img: filePath })
-            } else {
-                updateArticle = await Article.updateOne({ userid: _userid, articleid: _artid }, { title, body, postedOn, useAsProfilePic })
-            }
 
-            if (useAsProfilePic === 'true') {
-                updateArticleUseAsProfPic = await Article.updateMany({ $and: [{ userid: _userid, articleid: { $ne: _artid } }] }, { useAsProfilePic: false })
+            const article = await Article.findOne({userid: _userid , articleid : _artid});
+
+            if(article){
+
+                if (req.file) {
+
+                    if(article.img !== null){
+                        const params = {
+                            Bucket : bucketName,
+                            Key : article.img
+                        }
+                        
+                        const deleteCommand = new DeleteObjectCommand(params);
+                        await s3.send(deleteCommand);
+                        
+                    }
+
+                    const filename = uuidv4() + '_' + req.file.originalname;
+                    const buffer = await sharp(req.file.buffer).resize({height :  1080, width : 1920, fit: "contain"}).toBuffer();
+
+                    const params = {
+                        Bucket : bucketName,
+                        Key : filename,
+                        Body : buffer,
+                        ContentType : req.file.mimetype
+                    }
+                    const putCommand = new PutObjectCommand(params);
+                    await s3.send(putCommand)
+                    await Article.updateOne({ userid: _userid, articleid: _artid }, { title, body, postedOn, useAsProfilePic, img: filename , imgUrl : ''})
+    
+                } else {
+                    updateArticle = await Article.updateOne({ userid: _userid, articleid: _artid }, { title, body, postedOn, useAsProfilePic })
+                }
+    
+                if (useAsProfilePic === 'true') {
+                    updateArticleUseAsProfPic = await Article.updateMany({ $and: [{ userid: _userid, articleid: { $ne: _artid } }] }, { useAsProfilePic: false })
+                }
             }
+            
 
             res.status(200).send({
                 code: 0,
@@ -418,7 +483,7 @@ module.exports = {
                 message: 'saved article changes!!!',
                 token: null,
                 userdata: null,
-                others: filePath
+                others: null
             })
         } catch (error) {
             res.status(400).send({
@@ -435,7 +500,21 @@ module.exports = {
         try {
             const _userid = req.params.userid;
             const _artid = req.params.artid;
-            await Article.deleteOne({ userid: _userid, articleid: _artid });
+
+            const article = await Article.findOne({userid: _userid , articleid : _artid});
+
+            if(article){
+
+                const params = {
+                    Bucket : bucketName,
+                    Key : article.img
+                }
+                
+                const deleteCommand = new DeleteObjectCommand(params);
+                await s3.send(deleteCommand);
+                await Article.deleteOne({ userid: _userid, articleid: _artid });
+            }
+
             res.status(200).send({
                 code: 0,
                 error: null,
@@ -459,7 +538,20 @@ module.exports = {
     deleteArticleImage: async (req, res, next) => {
         const _userid = req.params.userid;
         const _artid = req.params.artid;
-        let update = await Article.updateOne({ userid: _userid, articleid: _artid }, { img: '' });
+
+        const article = await Article.findOne({userid: _userid , articleid : _artid});
+
+        if(article){
+
+            const params = {
+                Bucket : bucketName,
+                Key : article.img
+            }
+            
+            const deleteCommand = new DeleteObjectCommand(params);
+            await s3.send(deleteCommand);
+            await Article.updateOne({ userid: _userid, articleid: _artid }, { img: null , imgUrl : null});
+        }
 
         try {
             res.status(200).send({
@@ -485,7 +577,19 @@ module.exports = {
         try {
             const userid = req.params.userid;
 
-            let articles = await Article.find({ userid: userid })
+            const articles = await Article.find({ userid: userid })
+
+            for (const art of articles) {
+                
+                const getObjectParams = {
+                    Bucket : bucketName,
+                    Key : art.img
+                }
+                const getCommand = new GetObjectCommand(getObjectParams);
+                const url = await getSignedUrl(s3, getCommand, { expiresIn: 3600 });
+                
+                art.imgUrl = url;
+            }
 
             res.status(200).send({
                 code: 0,
